@@ -1,32 +1,78 @@
 const Product = require("../models/productModel");
 const sharp = require("sharp");
+const fetch = require("node-fetch");
+const cloudinary = require("cloudinary").v2;
+
+// Cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const processImages = async (requestId, products) => {
   for (const product of products) {
     const outputUrls = [];
 
-    for (const url of product.inputImageUrls) {
-      const compressedImageBuffer = await fetchAndCompressImage(url);
-      const outputUrl = await uploadToStorage(compressedImageBuffer); // Assume this uploads and gets URL
-      outputUrls.push(outputUrl);
-    }
+    try {
+      const imagePromises = product.inputImageUrls.map(async (url) => {
+        const compressedImageBuffer = await fetchAndCompressImage(url);
+        const outputUrl = await uploadToCloudinary(compressedImageBuffer); // Upload to Cloudinary
+        return outputUrl;
+      });
 
-    await Product.findOneAndUpdate(
-      { requestId, serialNumber: product.serialNumber },
-      { outputImageUrls: outputUrls, status: "Completed" }
-    );
+      // Wait for all image processing to complete
+      outputUrls.push(...(await Promise.all(imagePromises)));
+
+      // Update the product in MongoDB
+      await Product.findOneAndUpdate(
+        { requestId, serialNumber: product.serialNumber },
+        { outputImageUrls: outputUrls, status: "Completed" }
+      );
+    } catch (error) {
+      console.error(`Error processing product ${product.serialNumber}:`, error);
+      await Product.findOneAndUpdate(
+        { requestId, serialNumber: product.serialNumber },
+        { status: "Failed" }
+      );
+    }
   }
 };
 
 const fetchAndCompressImage = async (url) => {
-  const response = await fetch(url);
-  const imageBuffer = await response.buffer();
-  return sharp(imageBuffer).resize({ width: 800 }).toBuffer();
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image from URL: ${url}`);
+    }
+    const imageBuffer = await response.buffer();
+    return sharp(imageBuffer).resize({ width: 800 }).toBuffer();
+  } catch (error) {
+    console.error(`Error fetching or compressing image: ${url}`, error);
+    throw error;
+  }
 };
 
-const uploadToStorage = async (buffer) => {
-  // Dummy function: in a real app, upload buffer to cloud storage (e.g., AWS S3) and return URL.
-  return "https://dummyimage.com/output.jpg";
+const uploadToCloudinary = async (buffer) => {
+  try {
+    // Upload the image buffer to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload_stream(
+      { resource_type: "image" },
+      (error, result) => {
+        if (error) {
+          console.error("Error uploading to Cloudinary:", error);
+          throw error;
+        }
+        return result.secure_url; // Return the URL of the uploaded image
+      }
+    );
+
+    // Create a readable stream from the image buffer and pipe it to Cloudinary
+    buffer.pipe(uploadResponse);
+  } catch (error) {
+    console.error("Error uploading image to Cloudinary:", error);
+    throw error;
+  }
 };
 
 module.exports = { processImages };
