@@ -15,19 +15,21 @@ const processImages = async (requestId, products) => {
     const outputUrls = [];
 
     try {
-      const imagePromises = product.inputImageUrls.map(async (url) => {
-        const compressedImageBuffer = await fetchAndCompressImage(url);
-        const outputUrl = await uploadToCloudinary(compressedImageBuffer); // Upload to Cloudinary
-        return outputUrl;
-      });
+      
+        const compressedImageBuffer = await fetchAndCompressImage(
+          product.inputImageUrls
+        );
+       
+        
+      
 
       // Wait for all image processing to complete
-      outputUrls.push(...(await Promise.all(imagePromises)));
+     
 
       // Update the product in MongoDB
       await Product.findOneAndUpdate(
         { requestId, serialNumber: product.serialNumber },
-        { outputImageUrls: outputUrls, status: "Completed" }
+        { outputImageUrls: compressedImageBuffer, status: "Completed" }
       );
     } catch (error) {
       console.error(`Error processing product ${product.serialNumber}:`, error);
@@ -66,6 +68,7 @@ const uploadToCloudinary = async (buffer) => {
         return result.secure_url; // Return the URL of the uploaded image
       }
     );
+    
 
     // Create a readable stream from the image buffer and pipe it to Cloudinary
     buffer.pipe(uploadResponse);
@@ -75,4 +78,7 @@ const uploadToCloudinary = async (buffer) => {
   }
 };
 
+
 module.exports = { processImages };
+
+
