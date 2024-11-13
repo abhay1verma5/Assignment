@@ -7,21 +7,27 @@ const path = require("path");
 exports.uploadCSV = async (req, res) => {
   try {
     const requestId = uuidv4();
+
+    // Get the file path
     const filePath = path.join(__dirname, "..", "uploads", req.file.filename);
     const products = await parseCSV(filePath);
 
+    // Map the CSV data to the product documents
     const productDocs = products.map((product) => ({
-      serialNumber: parseInt(product["S. No."]),
-      productName: product["Product Name"],
-      inputImageUrls: product["Input Image Urls"].split(","),
+      serialNumber: product["BookID"], // Correct the key here
+      productName: product["Title"], // Correct the key here
+      inputImageUrls: product["CoverImageURL"].split(","), // Correct the key and use CoverImageURL
       requestId,
     }));
 
+    // Insert products into MongoDB and process images
     await Product.insertMany(productDocs);
     processImages(requestId, productDocs);
 
+    // Respond with the requestId
     res.status(200).json({ requestId });
   } catch (error) {
+    console.error(error); // Log the error for debugging
     res.status(500).json({ error: "Failed to upload CSV data" });
   }
 };
