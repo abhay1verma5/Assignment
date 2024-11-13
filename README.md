@@ -1,88 +1,246 @@
-﻿# Assignment
-### 1\. API Documentation
+﻿> **API Documentation**
+>
+> **Base URL:**
+>
+> http://localhost:5000/api/images
+>
+> **Endpoints**
+>
+> **1. Upload CSV File**
+>
+> ● **POST** /upload\
+> ● **Description**: This endpoint allows you to upload a CSV file
+> containing product information, including serial numbers, product
+> names, and image URLs. The data is processed, and image URLs are
+> updated.
 
-For documentation, use a format that includes the endpoint URL, HTTP method, request parameters, and responses.
++-----------------+-----------------+-----------------+-----------------+
+| ●               | > **Request     |                 |                 |
+|                 | > Body**:       |                 |                 |
+| ●               |                 |                 |                 |
++=================+=================+=================+=================+
+|                 | ○               | > **            |                 |
+|                 |                 | Content-Type**: |                 |
+|                 |                 | > mult          |                 |
+|                 |                 | ipart/form-data |                 |
++-----------------+-----------------+-----------------+-----------------+
+|                 | ○               | > **Form        |                 |
+|                 |                 | > Data**:       |                 |
++-----------------+-----------------+-----------------+-----------------+
+|                 | ■               |                 | > csvFile: The  |
+|                 |                 |                 | > CSV file to   |
+|                 |                 |                 | > be uploaded.  |
++-----------------+-----------------+-----------------+-----------------+
+|                 | > **Response**: |                 |                 |
++-----------------+-----------------+-----------------+-----------------+
 
-#### **1.1 Upload API**
+> **Success (200)**:\
+> json\
+> Copy code\
+> {\
+> \"requestId\": \"unique-request-id\"\
+> }
+>
+> ○
+>
+> **Error (500)**:\
+> json\
+> Copy code\
+> {\
+> \"error\": \"Failed to upload CSV data\"\
+> }
+>
+> ○
+>
+> **2. Check Status**
 
-*   **Endpoint**: /api/images/upload
-    
-*   **Method**: POST
-    
-*   **Description**: Accepts a CSV file, validates it, and returns a unique request ID.
-    
-*   **Headers**: Content-Type: multipart/form-data
-    
-*   **Request**: csvFile (form-data)
-    
-    *   **Type**: File
-        
-    *   **Required**: Yes
-        
-    *   **Description**: A CSV file containing serial number, product name, and image URLs.
-        
-*   **Response**:
-    
-    *   jsonCopy code{ "requestId": "unique-request-id"}
-        
-    *   jsonCopy code{ "error": "Failed to upload CSV data"}
-        
-*   bashCopy codecurl -X POST http://localhost:5000/api/images/upload \\-F 'csvFile=@path/to/yourfile.csv'
-    
++-----------------------+-----------------------+-----------------------+
+| > ●\                  | > **GET**             |                       |
+| > ●\                  | > /status/:requestId\ |                       |
+| > ●                   | > **Description**:    |                       |
+|                       | > Fetches the status  |                       |
+| ●                     | > of a product        |                       |
+|                       | > request by          |                       |
+|                       | > requestId.          |                       |
+|                       | >                     |                       |
+|                       | > **Parameters**:     |                       |
++=======================+=======================+=======================+
+|                       | ○                     | > requestId (URL      |
+|                       |                       | > parameter): The     |
+|                       |                       | > unique ID assigned  |
+|                       |                       | > to the product      |
+|                       |                       | > request.            |
++-----------------------+-----------------------+-----------------------+
+|                       | > **Response**:       |                       |
++-----------------------+-----------------------+-----------------------+
 
-#### **1.2 Status API**
+> **Success (200)**:\
+> json\
+> Copy code\
+> {\
+> \"message\": \"data\",\
+> \"status\": \[\
+> {\
+> \"serialNumber\": 12345,\
+> \"productName\": \"Example Product\",\
+> \"inputImageUrls\": \[\"https://example.com/image1.jpg\"\],\
+> \"outputImageUrls\": \[\"https://example.com/compressed_image.jpg\"\],
+> \"requestId\": \"unique-request-id\",\
+> \"status\": \"Completed\",\
+> \"updatedAt\": \"2024-11-14T12:00:00Z\"\
+> }\
+> \]\
+> }
+>
+> ○
+>
+> **Error (404)**:\
+> json\
+> Copy code\
+> {\
+> \"message\": \"No records found\"\
+> }
+>
+> ○
+>
+> **Error (500)**:\
+> json\
+> Copy code\
+> {\
+> \"error\": \"Failed to check status\"
+>
+> }
+>
+> ○
+>
+> **3. Update Product Status**
+>
+> ● **POST** /webhook\
+> ● **Description**: Updates the status of products in a given request
+> based on the provided status. Typically used by webhook listeners.
+>
+> **Request Body**:\
+> json\
+> Copy code\
+> {\
+> \"requestId\": \"unique-request-id\",\
+> \"status\": \"Completed\"\
+> }
+>
+> ●\
+> ● **Response**:
+>
+> **Success (200)**:\
+> json\
+> Copy code\
+> {\
+> \"message\": \"Webhook received and processed successfully\" }
+>
+> ○
+>
+> **Error (400)**:\
+> json\
+> Copy code\
+> {\
+> \"error\": \"Invalid input: requestId, status are required\" }
+>
+> ○
+>
+> **Error (500)**:\
+> json
+>
+> Copy code\
+> {\
+> \"error\": \"Internal server error\"\
+> }\
+> ○
+>
+> **Background Jobs**\
+> **1. Image Processing**\
+> ● The processImages function processes all images for products related
+> to a specific requestId. It fetches the images, compresses them, and
+> updates the product with the new image URLs in Cloudinary.
 
-*   **Endpoint**: /api/images/status/:requestId
-    
-*   **Method**: GET
-    
-*   **Description**: Checks the processing status of a request using the requestId.
-    
-*   **Path Parameters**:
-    
-    *   requestId - (String) Unique ID returned by the upload endpoint.
-        
-*   **Response**:
-    
-    *   jsonCopy code{ "status": "Pending"}
-        
-    *   jsonCopy code{ "message": "No records found"}
-        
-    *   jsonCopy code{ "error": "Failed to check status"}
-        
-*   bashCopy codecurl -X GET http://localhost:5000/api/images/status/unique-request-id
-    
++-----------------------+-----------------------+-----------------------+
+| ●                     | > **Status Values**:  |                       |
++=======================+=======================+=======================+
+|                       | ○                     | > Pending: Image      |
+|                       |                       | > processing has not  |
+|                       |                       | > started.            |
++-----------------------+-----------------------+-----------------------+
+|                       | ○                     | > Processing: Image   |
+|                       |                       | > processing is in    |
+|                       |                       | > progress.           |
++-----------------------+-----------------------+-----------------------+
+|                       | ○                     | > Completed: Image    |
+|                       |                       | > processing is       |
+|                       |                       | > finished.           |
++-----------------------+-----------------------+-----------------------+
 
-### 2\. Asynchronous Workers Documentation
+> **2. MongoDB Connection**\
+> ● MongoDB is used to store the product data and its associated status.
+> The application connects to the database using the MONGO_URI
+> environment variable.
+>
+> **3. CSV Parsing**\
+> ● The parseCSV utility is used to read and parse a CSV file and
+> extract product information.
+>
+> **Error Handling**
 
-In this setup, asynchronous image processing happens within services/imageProcessingService.js. Here’s a breakdown of the workers:
++-----------------------+-----------------------+-----------------------+
+| ●                     | > **General Errors**: |                       |
++=======================+=======================+=======================+
+|                       | ○                     | > 400: Bad Request    |
+|                       |                       | > (Invalid input)     |
++-----------------------+-----------------------+-----------------------+
+|                       | ○                     | > 404: Not Found      |
+|                       |                       | > (Resource not       |
+|                       |                       | > found, e.g., no     |
+|                       |                       | > records for         |
+|                       |                       | > requestId)          |
++-----------------------+-----------------------+-----------------------+
+|                       | ○                     | > 500: Internal       |
+|                       |                       | > Server Error        |
+|                       |                       | > (Unexpected server  |
+|                       |                       | > errors)             |
++-----------------------+-----------------------+-----------------------+
 
-#### **Worker Functions**
+> **Environment Variables**
 
-1.  **processImages**
-    
-    *   **Description**: This function takes a requestId and an array of product documents, processes each product’s image URLs by compressing them, and updates the database with output image URLs and status.
-        
-    *   **Steps**:
-        
-        1.  Iterates over each product document.
-            
-        2.  For each input image URL, it fetches the image, compresses it to 50% of its original size, and uploads it to a storage service.
-            
-        3.  Stores the new (output) image URLs in the database for each product and updates the processing status to Completed.
-            
-2.  **fetchAndCompressImage**
-    
-    *   **Description**: Downloads an image from a URL, compresses it using the sharp library, and returns the compressed image buffer.
-        
-    *   **Steps**:
-        
-        1.  Fetches the image data from the given URL.
-            
-        2.  Uses sharp to resize the image and return a buffer with reduced quality.
-            
-3.  **uploadToStorage**
-    
-    *   **Description**: This is a placeholder function where compressed images are uploaded to a cloud storage provider, and it returns the public URL of the uploaded image.
-        
-    *   **Note**: In a real implementation, this would integrate with a service like Amazon S3 or Google Cloud Storage to save the image and retrieve the URL.
++-----------------------------------+-----------------------------------+
+| ●                                 | > MONGO_URI: MongoDB connection   |
+|                                   | > string.                         |
++===================================+===================================+
++-----------------------------------+-----------------------------------+
+
+> **Dependencies**
+
++-----------------------------------+-----------------------------------+
+| > ●\                              | > **express**: A fast,            |
+| > ●\                              | > unopinionated web framework for |
+| > ●\                              | > Node.js.                        |
+| > ●\                              | >                                 |
+| > ●\                              | > **dotenv**: Loads environment   |
+| > ●\                              | > variables from a .env file.     |
+| > ●\                              | >                                 |
+| > ●                               | > **mongoose**: MongoDB object    |
+|                                   | > modeling for Node.js.           |
+|                                   | >                                 |
+|                                   | > **sharp**: High-performance     |
+|                                   | > image processing library.       |
+|                                   | >                                 |
+|                                   | > **node-fetch**: A lightweight   |
+|                                   | > module for making HTTP          |
+|                                   | > requests.                       |
+|                                   | >                                 |
+|                                   | > **csv-parser**: CSV file        |
+|                                   | > parsing.                        |
+|                                   | >                                 |
+|                                   | > **multer**: Middleware for      |
+|                                   | > handling multipart/form-data    |
+|                                   | > (used for file uploads).        |
+|                                   | > **uuid**: A package to generate |
+|                                   | > unique IDs.                     |
++===================================+===================================+
++-----------------------------------+-----------------------------------+

@@ -20,22 +20,21 @@ exports.uploadCSV = async (req, res) => {
 
     }
 
-    // Map the CSV data to the product documents
+    
     const productDocs = products.map((product) => ({
-      serialNumber: product["BookID"], // Correct the key here
-      productName: product["Title"], // Correct the key here
+      serialNumber: product["BookID"], 
+      productName: product["Title"], 
       inputImageUrls: product["CoverImageURL"], // Correct the key and use CoverImageURL
       requestId,
     }));
 
-    // Insert products into MongoDB and process images
     await Product.insertMany(productDocs);
    
 
-    // Respond with the requestId
+  
     res.status(200).json({ requestId });
   } catch (error) {
-    console.error(error); // Log the error for debugging
+    console.error(error); 
     res.status(500).json({ error: "Failed to upload CSV data" });
   }
 };
