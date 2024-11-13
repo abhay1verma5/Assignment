@@ -1,0 +1,47 @@
+# Node modules directory
+node_modules/
+
+# Environment variables file
+.env
+
+# Uploaded files (if any, such as CSV uploads)
+uploads/
+
+# Log files
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Coverage directory
+coverage/
+
+# Ignore MacOS .DS_Store files
+.DS_Store
+
+# Build directory
+dist/
+
+# Temporary files and backups
+*.tmp
+*.temp
+*.bak
+*.old
+
+# Other backups
+*.orig
+*.save
